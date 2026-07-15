@@ -194,11 +194,6 @@
     <h1>B/Hindu College Welimada</h1>
     <div class="sub">Teacher Management System</div>
 
-    <div class="login-toggle">
-      <button id="toggleAdmin" class="active" onclick="switchLoginMode('admin')">Admin</button>
-      <button id="toggleStaff" onclick="switchLoginMode('staff')">Teacher / Staff</button>
-    </div>
-
     <div class="field">
       <label>Username</label>
       <input type="text" id="loginUser" placeholder="e.g. WHC@Admin">
@@ -328,25 +323,6 @@
       </div>
     </div>
 
-    <!-- STAFF VIEW (non-admin) -->
-    <div id="staffView" class="hidden">
-      <div class="card">
-        <h3>👤 My Profile</h3>
-        <div class="grid2">
-          <div><div class="field"><label>Name</label><div style="padding:10px 0; font-size:15px;" id="pfName">-</div></div></div>
-          <div><div class="field"><label>Role</label><div style="padding:10px 0;" id="pfRole">-</div></div></div>
-          <div><div class="field"><label>Class Teacher Of</label><div style="padding:10px 0;" id="pfClass">-</div></div></div>
-          <div><div class="field"><label>Subject</label><div style="padding:10px 0;" id="pfSubject">-</div></div></div>
-        </div>
-      </div>
-      <div class="card">
-        <h3>🔑 Change Password</h3>
-        <div class="grid2">
-          <div class="field"><label>New Password</label><input type="text" id="pfNewPass" placeholder="Enter new password"></div>
-        </div>
-        <button class="btn" style="width:auto; padding:9px 22px;" onclick="changeOwnPassword()">Update Password</button>
-      </div>
-    </div>
   </main>
 </div>
 
@@ -415,9 +391,7 @@ const ROLE_PILL_CLASS = {
 };
 
 /* ================= STATE ================= */
-let loginMode = "admin";
 let staffCache = [];
-let currentSession = null; // {type:'admin'} or {type:'staff', id, ...}
 let scheduleClasses = [];   // populated from Firestore "classes" collection (same as schedule.html)
 
 /* Subject lists — mirrors DEFAULT_SUBJECTS_9_11 / DEFAULT_SUBJECTS_6_8 used in schedule.html (fallback only) */
@@ -528,15 +502,11 @@ function genUsername(name, role){
   return `whc.${rolePrefix}.${base}${rand}`;
 }
 
-/* ================= LOGIN ================= */
-function switchLoginMode(mode){
-  loginMode = mode;
-  document.getElementById('toggleAdmin').classList.toggle('active', mode==='admin');
-  document.getElementById('toggleStaff').classList.toggle('active', mode==='staff');
-  document.getElementById('loginUser').placeholder = mode==='admin' ? "e.g. WHC@Admin" : "Your username";
-  document.getElementById('loginErr').textContent = "";
-}
-
+/* ================= LOGIN =================
+   Single login only: WHC@Admin. This app has one account and does not
+   manage separate teacher/staff logins — those credentials generated
+   below (Add Staff) are for use in another web app, not for logging
+   into this one. */
 async function doLogin(){
   const user = document.getElementById('loginUser').value.trim();
   const pass = document.getElementById('loginPass').value;
@@ -548,37 +518,15 @@ async function doLogin(){
   const btn = document.getElementById('loginBtn');
   btn.innerHTML = '<span class="spinner"></span> Logging in...';
 
-  try{
-    if(loginMode === 'admin'){
-      if(user === ADMIN_USER && pass === ADMIN_PASS){
-        currentSession = {type:'admin'};
-        enterApp();
-      } else {
-        errEl.textContent = "Invalid admin credentials.";
-      }
-    } else {
-      const snap = await db.collection(STAFF_COL)
-        .where('username','==', user)
-        .where('password','==', pass)
-        .limit(1).get();
-      if(snap.empty){
-        errEl.textContent = "Invalid username or password.";
-      } else {
-        const doc = snap.docs[0];
-        currentSession = {type:'staff', id: doc.id, ...doc.data()};
-        enterApp();
-      }
-    }
-  } catch(e){
-    console.error(e);
-    errEl.textContent = "Login failed: " + e.message;
-  } finally {
-    btn.innerHTML = "Login";
+  if(user === ADMIN_USER && pass === ADMIN_PASS){
+    enterApp();
+  } else {
+    errEl.textContent = "Invalid credentials.";
   }
+  btn.innerHTML = "Login";
 }
 
 function logout(){
-  currentSession = null;
   document.getElementById('appScreen').classList.add('hidden');
   document.getElementById('loginScreen').classList.remove('hidden');
   document.getElementById('loginUser').value = "";
@@ -589,38 +537,11 @@ function enterApp(){
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('appScreen').classList.remove('hidden');
 
-  if(currentSession.type === 'admin'){
-    document.getElementById('currentUserName').textContent = "WHC Admin";
-    document.getElementById('currentUserRole').textContent = "Admin";
-    document.getElementById('currentUserRole').classList.add('admin');
-    document.getElementById('adminView').classList.remove('hidden');
-    document.getElementById('staffView').classList.add('hidden');
-    loadStaff();
-    loadScheduleClasses();
-  } else {
-    document.getElementById('currentUserName').textContent = currentSession.name;
-    document.getElementById('currentUserRole').textContent = ROLE_LABELS[currentSession.role] || "Staff";
-    document.getElementById('currentUserRole').classList.remove('admin');
-    document.getElementById('adminView').classList.add('hidden');
-    document.getElementById('staffView').classList.remove('hidden');
-    document.getElementById('pfName').textContent = currentSession.name || '-';
-    document.getElementById('pfRole').textContent = ROLE_LABELS[currentSession.role] || '-';
-    document.getElementById('pfClass').textContent = currentSession.className || '—';
-    document.getElementById('pfSubject').textContent = currentSession.subject || '—';
-  }
-}
-
-async function changeOwnPassword(){
-  const newPass = document.getElementById('pfNewPass').value.trim();
-  if(!newPass){ toast("Enter a new password", "error"); return; }
-  try{
-    await db.collection(STAFF_COL).doc(currentSession.id).update({password: newPass});
-    currentSession.password = newPass;
-    document.getElementById('pfNewPass').value = "";
-    toast("Password updated successfully");
-  } catch(e){
-    toast("Failed: " + e.message, "error");
-  }
+  document.getElementById('currentUserName').textContent = "WHC Admin";
+  document.getElementById('currentUserRole').textContent = "Admin";
+  document.getElementById('currentUserRole').classList.add('admin');
+  loadStaff();
+  loadScheduleClasses();
 }
 
 /* ================= TABS ================= */
