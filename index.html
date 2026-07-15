@@ -183,6 +183,24 @@
     border-radius:50%; animation:spin .7s linear infinite; display:inline-block; vertical-align:middle;
   }
   @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* ---------- PROFILE ---------- */
+  .avatar-circle{
+    width:34px;height:34px;border-radius:50%;flex-shrink:0;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    color:#fff;font-weight:700;font-size:13px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .name-cell{display:flex;align-items:center;gap:10px;}
+  .name-cell .sub{font-size:11px;color:var(--muted);}
+  .profile-modal .modal{max-width:520px;}
+  .profile-head{display:flex;align-items:center;gap:16px;margin-bottom:18px;}
+  .profile-head .avatar-circle{width:64px;height:64px;font-size:22px;}
+  .profile-head .p-name{font-size:17px;font-weight:700;}
+  .profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;margin-bottom:6px;}
+  .profile-item{font-size:13px;}
+  .profile-item .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;}
+  .profile-item .val{font-weight:600;}
 </style>
 </head>
 <body>
@@ -249,7 +267,7 @@
             <table>
               <thead>
                 <tr>
-                  <th>Name</th><th>Role</th><th>Username</th><th>Password</th><th>Class</th><th>Subject</th><th></th>
+                  <th>Name</th><th>Role</th><th>Age</th><th>Username</th><th>Password</th><th>Class</th><th>Subject</th><th></th>
                 </tr>
               </thead>
               <tbody id="staffTableBody"></tbody>
@@ -278,6 +296,45 @@
                 <option value="teacher" selected>Teacher</option>
               </select>
             </div>
+          </div>
+
+          <div class="grid3">
+            <div class="field">
+              <label>Date of Birth</label>
+              <input type="date" id="newDob">
+            </div>
+            <div class="field">
+              <label>Gender</label>
+              <select id="newGender">
+                <option value="">— None —</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Employee / NIC No.</label>
+              <input type="text" id="newEmpId" placeholder="e.g. WHC-0042">
+            </div>
+          </div>
+
+          <div class="grid3">
+            <div class="field">
+              <label>Phone Number</label>
+              <input type="text" id="newPhone" placeholder="e.g. 077 123 4567">
+            </div>
+            <div class="field">
+              <label>Qualification</label>
+              <input type="text" id="newQualification" placeholder="e.g. BSc (Hons), PGDE">
+            </div>
+            <div class="field">
+              <label>Date Joined</label>
+              <input type="date" id="newJoinDate">
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Address</label>
+            <input type="text" id="newAddress" placeholder="e.g. Welimada, Badulla">
           </div>
 
           <div class="grid2" id="classSubjectRow">
@@ -347,6 +404,26 @@
       <div class="field"><label>Subject</label><select id="editSubject"><option value="">— None —</option></select></div>
     </div>
     <div class="grid2">
+      <div class="field"><label>Date of Birth</label><input type="date" id="editDob"></div>
+      <div class="field">
+        <label>Gender</label>
+        <select id="editGender">
+          <option value="">— None —</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Employee / NIC No.</label><input type="text" id="editEmpId"></div>
+      <div class="field"><label>Phone Number</label><input type="text" id="editPhone"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Qualification</label><input type="text" id="editQualification"></div>
+      <div class="field"><label>Date Joined</label><input type="date" id="editJoinDate"></div>
+    </div>
+    <div class="field"><label>Address</label><input type="text" id="editAddress"></div>
+    <div class="grid2">
       <div class="field"><label>Username</label><input type="text" id="editUsername"></div>
       <div class="field"><label>Password</label><input type="text" id="editPassword"></div>
     </div>
@@ -355,6 +432,11 @@
       <button class="btn" onclick="saveEdit()">Save Changes</button>
     </div>
   </div>
+</div>
+
+<!-- Profile View Modal -->
+<div class="modal-overlay hidden profile-modal" id="profileModal">
+  <div class="modal" id="profileModalBody"></div>
 </div>
 
 <script>
@@ -578,6 +660,13 @@ async function addStaff(){
   const role = document.getElementById('newRole').value;
   const className = document.getElementById('newClass').value.trim();
   const subject = document.getElementById('newSubject').value.trim();
+  const dob = document.getElementById('newDob').value;
+  const gender = document.getElementById('newGender').value;
+  const empId = document.getElementById('newEmpId').value.trim();
+  const phone = document.getElementById('newPhone').value.trim();
+  const qualification = document.getElementById('newQualification').value.trim();
+  const joinDate = document.getElementById('newJoinDate').value;
+  const address = document.getElementById('newAddress').value.trim();
   let username = document.getElementById('newUsername').value.trim();
   let password = document.getElementById('newPassword').value.trim();
 
@@ -594,6 +683,7 @@ async function addStaff(){
 
     await db.collection(STAFF_COL).add({
       name, role, className, subject, username, password,
+      dob, gender, empId, phone, qualification, joinDate, address,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
@@ -608,6 +698,13 @@ async function addStaff(){
     document.getElementById('newUsername').value = "";
     document.getElementById('newPassword').value = "";
     document.getElementById('newRole').value = "teacher";
+    document.getElementById('newDob').value = "";
+    document.getElementById('newGender').value = "";
+    document.getElementById('newEmpId').value = "";
+    document.getElementById('newPhone').value = "";
+    document.getElementById('newQualification').value = "";
+    document.getElementById('newJoinDate').value = "";
+    document.getElementById('newAddress').value = "";
 
     loadStaff();
   } catch(e){
@@ -635,6 +732,21 @@ function renderStats(){
   document.getElementById('statClasses').textContent = staffCache.filter(s=>s.className && s.className.trim()).length;
 }
 
+function calcAge(dob){
+  if(!dob) return null;
+  const b = new Date(dob);
+  if(isNaN(b.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - b.getFullYear();
+  const m = now.getMonth() - b.getMonth();
+  if(m < 0 || (m === 0 && now.getDate() < b.getDate())) age--;
+  return age;
+}
+
+function initials(name){
+  return (name||'').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase() || '?';
+}
+
 function renderStaffTable(){
   const search = (document.getElementById('searchStaff').value || "").toLowerCase();
   const tbody = document.getElementById('staffTableBody');
@@ -653,16 +765,27 @@ function renderStaffTable(){
   emptyEl.classList.add('hidden');
 
   filtered.forEach(s => {
+    const age = calcAge(s.dob);
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${escapeHtml(s.name||'')}</td>
+      <td>
+        <div class="name-cell">
+          <div class="avatar-circle">${initials(s.name)}</div>
+          <div>
+            <div>${escapeHtml(s.name||'')}</div>
+            ${s.subject || s.qualification ? `<div class="sub">${escapeHtml(s.qualification||'')}</div>` : ''}
+          </div>
+        </div>
+      </td>
       <td><span class="pill ${ROLE_PILL_CLASS[s.role]||'teacher'}">${ROLE_LABELS[s.role]||s.role}</span></td>
+      <td>${age!=null ? age : '—'}</td>
       <td>${escapeHtml(s.username||'')}</td>
       <td>${escapeHtml(s.password||'')}</td>
       <td>${escapeHtml(s.className||'—')}</td>
       <td>${escapeHtml(s.subject||'—')}</td>
       <td>
         <div class="row-actions">
+          <button class="icon-btn" title="View Profile" onclick="openProfileModal('${s.id}')">👁</button>
           <button class="icon-btn" title="Edit" onclick="openEditModal('${s.id}')">✎</button>
           <button class="icon-btn del" title="Delete" onclick="deleteStaff('${s.id}','${escapeHtml(s.name||'')}')">✕</button>
         </div>
@@ -703,6 +826,13 @@ function openEditModal(id){
   document.getElementById('editSubject').value = s.subject || '';
   document.getElementById('editUsername').value = s.username || '';
   document.getElementById('editPassword').value = s.password || '';
+  document.getElementById('editDob').value = s.dob || '';
+  document.getElementById('editGender').value = s.gender || '';
+  document.getElementById('editEmpId').value = s.empId || '';
+  document.getElementById('editPhone').value = s.phone || '';
+  document.getElementById('editQualification').value = s.qualification || '';
+  document.getElementById('editJoinDate').value = s.joinDate || '';
+  document.getElementById('editAddress').value = s.address || '';
   document.getElementById('editModal').classList.remove('hidden');
 }
 function closeEditModal(){
@@ -717,6 +847,13 @@ async function saveEdit(){
     subject: document.getElementById('editSubject').value.trim(),
     username: document.getElementById('editUsername').value.trim(),
     password: document.getElementById('editPassword').value.trim(),
+    dob: document.getElementById('editDob').value,
+    gender: document.getElementById('editGender').value,
+    empId: document.getElementById('editEmpId').value.trim(),
+    phone: document.getElementById('editPhone').value.trim(),
+    qualification: document.getElementById('editQualification').value.trim(),
+    joinDate: document.getElementById('editJoinDate').value,
+    address: document.getElementById('editAddress').value.trim(),
   };
   try{
     await db.collection(STAFF_COL).doc(id).update(updated);
@@ -727,6 +864,45 @@ async function saveEdit(){
     toast("Update failed: " + e.message, "error");
   }
 }
+/* ================= PROFILE VIEW ================= */
+function openProfileModal(id){
+  const s = staffCache.find(x=>x.id===id);
+  if(!s) return;
+  const age = calcAge(s.dob);
+  const body = document.getElementById('profileModalBody');
+  body.innerHTML = `
+    <div class="profile-head">
+      <div class="avatar-circle">${initials(s.name)}</div>
+      <div>
+        <div class="p-name">${escapeHtml(s.name||'')}</div>
+        <span class="pill ${ROLE_PILL_CLASS[s.role]||'teacher'}">${ROLE_LABELS[s.role]||s.role}</span>
+      </div>
+    </div>
+    <div class="profile-grid">
+      <div class="profile-item"><div class="lbl">Age</div><div class="val">${age!=null?age+' yrs':'—'}</div></div>
+      <div class="profile-item"><div class="lbl">Gender</div><div class="val">${escapeHtml(s.gender||'—')}</div></div>
+      <div class="profile-item"><div class="lbl">Date of Birth</div><div class="val">${escapeHtml(s.dob||'—')}</div></div>
+      <div class="profile-item"><div class="lbl">Date Joined</div><div class="val">${escapeHtml(s.joinDate||'—')}</div></div>
+      <div class="profile-item"><div class="lbl">Employee / NIC No.</div><div class="val">${escapeHtml(s.empId||'—')}</div></div>
+      <div class="profile-item"><div class="lbl">Phone</div><div class="val">${escapeHtml(s.phone||'—')}</div></div>
+      <div class="profile-item"><div class="lbl">Qualification</div><div class="val">${escapeHtml(s.qualification||'—')}</div></div>
+      <div class="profile-item"><div class="lbl">Address</div><div class="val">${escapeHtml(s.address||'—')}</div></div>
+      <div class="profile-item"><div class="lbl">Class</div><div class="val">${escapeHtml(s.className||'—')}</div></div>
+      <div class="profile-item"><div class="lbl">Subject</div><div class="val">${escapeHtml(s.subject||'—')}</div></div>
+      <div class="profile-item"><div class="lbl">Username</div><div class="val">${escapeHtml(s.username||'—')}</div></div>
+      <div class="profile-item"><div class="lbl">Password</div><div class="val">${escapeHtml(s.password||'—')}</div></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeProfileModal()">Close</button>
+      <button class="btn" onclick="closeProfileModal(); openEditModal('${s.id}')">Edit Profile</button>
+    </div>
+  `;
+  document.getElementById('profileModal').classList.remove('hidden');
+}
+function closeProfileModal(){
+  document.getElementById('profileModal').classList.add('hidden');
+}
+
 async function deleteStaff(id, name){
   if(!confirm(`Delete ${name}? This cannot be undone.`)) return;
   try{
